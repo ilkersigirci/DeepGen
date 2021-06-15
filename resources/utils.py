@@ -104,29 +104,3 @@ def load_state(model, optimizer, path, mode='train', device='cpu'):
         model.train()
     
     epoch = state['epoch']
-
-    
-def generate_target_attr():
-    # Target Attribute indices
-    # 5: Bald, 6: Bangs, 9: Black Hair, 10: Blond Hair, 12: Brown Hair, 13: Bushy Eyebrows
-    # 16: Eyeglasses, 21: Male, 22: Mouth Slightly Open, 23: Mustache, 25: No Beard, 27: Pale Skin, 40: Young
-    attr = torch.zeros(40)
-    target_attr_list = [5, 6, 9, 10, 12, 13, 16, 21, 22, 23, 25, 27, 40]
-    for index in target_attr_list:
-      if index == 9:
-        hair_color = random.randint(0,2)
-        if hair_color == 0:
-          attr[index - 1] = 1
-          attr[index + 1 - 1] = 0
-          attr[index + 3 - 1] = 0
-        elif hair_color == 1:
-          attr[index - 1] = 0
-          attr[index + 1 - 1] = 1
-          attr[index + 3 - 1] = 0
-        else:
-          attr[index - 1] = 0
-          attr[index + 1 - 1] = 1
-          attr[index + 3 - 1] = 0
-      else:       
-        attr[index - 1] = random.randint(0,1)
-    return attr
