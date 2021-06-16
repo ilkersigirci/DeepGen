@@ -12,6 +12,8 @@ class Attribute:
         # NOTE: bald is also included
         self.hair_color_keys = [5, 9, 10, 12]
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     def generate(self):
 
         attr = torch.zeros(40)
@@ -31,6 +33,8 @@ class Attribute:
 
             attr[key - 1] = random.randint(0,1)
 
+        attr.to_device(self.device)
+
         return attr
 
     
@@ -46,6 +50,8 @@ class Attribute:
 
                 if value == name:
                     attr[key - 1] = 1
+
+        attr.to_device(self.device)
                 
         return attr
 
@@ -62,6 +68,21 @@ class Attribute:
         names =  [self.target_attr_list[index+1] for index in indices]
 
         return names
+
+    def get_attr_difference_names(self, attr_s, attr_t):
+
+        added   = []
+        removed = []
+
+        for (key, value) in self.target_attr_list:
+            
+            if attr_s[key - 1] == 0 and attr_t[key - 1] == 1:
+                added.append(value)
+            
+            elif attr_s[key - 1] == 1 and attr_t[key - 1] == 0:
+                removed.append(value)
+
+        return added, removed
 
 ## USAGE
 #attr_class = Attribute()

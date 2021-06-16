@@ -104,3 +104,9 @@ def load_state(model, optimizer, path, mode='train', device='cpu'):
         model.train()
     
     epoch = state['epoch']
+
+def set_seeds(seed):
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
