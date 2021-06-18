@@ -14,6 +14,8 @@ class Attribute:
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+        self.selected_attr_indices = [4, 5, 8, 9, 11, 12, 15, 20, 21, 22, 24, 26, 39]
+
     def generate(self):
 
         attr = torch.zeros(40)
@@ -32,6 +34,8 @@ class Attribute:
                 continue
 
             attr[key - 1] = random.randint(0,1)
+        
+        attr = attr[self.selected_attr_indices]
 
         attr.to(self.device)
 
@@ -51,15 +55,16 @@ class Attribute:
                 if value == name:
                     attr[key - 1] = 1
 
+        attr = attr[self.selected_attr_indices]
         attr.to(self.device)
                 
         return attr
 
     def get_attr_names(self, attr_array):
 
-        assert attr_array.shape[0] == 40
+        assert attr_array.shape[0] == 13
 
-        attr = attr_array.numpy()
+        attr = attr_array.cpu().numpy()
 
         indices = np.where(attr == 1)[0]
 
