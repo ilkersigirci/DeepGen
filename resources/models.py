@@ -26,13 +26,13 @@ class STU(nn.Module):
 
         self.reset = nn.Sequential(
             self.conv,
-            #nn.BatchNorm2d(output_dim),
+            nn.BatchNorm2d(output_dim),
             nn.Sigmoid()
         )
 
         self.update = nn.Sequential(
             self.conv,
-            #nn.BatchNorm2d(output_dim),
+            nn.BatchNorm2d(output_dim),
             nn.Sigmoid()
         )
 
@@ -44,7 +44,7 @@ class STU(nn.Module):
 
         self.intermediate = nn.Sequential(
             self.conv,
-            #nn.BatchNorm2d(output_dim),
+            nn.BatchNorm2d(output_dim),
             nn.Tanh()
         )
 

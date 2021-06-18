@@ -33,7 +33,7 @@ class Attribute:
 
             attr[key - 1] = random.randint(0,1)
 
-        attr.to_device(self.device)
+        attr.to(self.device)
 
         return attr
 
@@ -51,7 +51,7 @@ class Attribute:
                 if value == name:
                     attr[key - 1] = 1
 
-        attr.to_device(self.device)
+        attr.to(self.device)
                 
         return attr
 
