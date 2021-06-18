@@ -8,7 +8,7 @@ class Attribute:
         self.target_attr_list = {5 : "bald", 6 : "bangs", 9 : "black_hair", 10 : "blond_hair", 12 : "brown_hair", 13 : "bushy_eyebrows", 16 : "eyeglasses",
                                 21 : "male", 22 : "mouth_open", 23 : "mustache", 25 : "no_beard", 27 : "pale_skin", 40 : "young"}
         
-        # FIXME: one hair color must set to 1?"
+        # FIXME: one hair color must set to 1?" -> YES
         # NOTE: bald is also included
         self.hair_color_keys = [5, 9, 10, 12]
 
@@ -20,7 +20,7 @@ class Attribute:
 
         hair_color_key = random.choice(self.hair_color_keys)
 
-        attr[hair_color_key - 1] = random.randint(0,1)
+        attr[hair_color_key - 1] = 1                        #random.randint(0,1)
 
         for key in self.target_attr_list.keys():
 
@@ -59,13 +59,13 @@ class Attribute:
 
         assert attr_array.shape[0] == 40
 
-        attr  = attr_array.numpy()
+        attr = attr_array.numpy()
 
         indices = np.where(attr == 1)[0]
 
         assert len(indices) > 0
 
-        names =  [self.target_attr_list[index+1] for index in indices]
+        names = [self.target_attr_list[index+1] for index in indices]
 
         return names
 
