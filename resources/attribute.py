@@ -6,39 +6,45 @@ import random
 class Attribute:
 
     def __init__(self):
-        self.target_attr_list = {5: "bald", 6: "bangs", 9: "black_hair", 10: "blond_hair", 12: "brown_hair",
-                                 13: "bushy_eyebrows", 16: "eyeglasses",
-                                 21: "male", 22: "mouth_open", 23: "mustache", 25: "no_beard", 27: "pale_skin",
-                                 40: "young"}
+
+        self.selected_attr_indices = [4, 5, 8, 9, 11, 12, 15, 20, 21, 22, 24, 26, 39]
+        self.attr_num = len(self.selected_attr_indices)
 
         # FIXME: one hair color must set to 1?" -> YES
         # NOTE: bald is also included
-        self.hair_color_keys = [5, 9, 10, 12]
+        self.hair_color_indices = [0, 2, 3, 4]
+
+        self.selected_attr_list = ["bald", "bangs", "black_hair", "blond_hair", "brown_hair",
+                                    "bushy_eyebrows", "eyeglasses", "male", "mouth_open",
+                                    "mustache", "no_beard", "pale_skin","young"]
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # self.selected_attr_indices = [4, 5, 8, 9, 11, 12, 15, 20, 21, 22, 24, 26, 39]
+    def transform_original_attributes(self, attr):
+
+        attr = attr[:, self.selected_attr_indices]
+        attr.to(self.device)
+
+        return attr
 
     def generate(self):
 
-        attr = torch.zeros(40)
+        attr = torch.zeros(self.attr_num)
 
-        hair_color_key = random.choice(self.hair_color_keys)
+        hair_color_index = random.choice(self.hair_color_indices)
 
-        attr[hair_color_key - 1] = 1  # random.randint(0,1)
+        attr[hair_color_index] = 1  # random.randint(0,1)
 
-        for key in self.target_attr_list.keys():
+        for index in self.selected_attr_list:
 
-            if key in self.hair_color_keys:
+            if index in self.hair_color_indices:
                 continue
 
             # Handle bald and bangs collision
-            if key == 6 and attr[4] == 1:
+            if index == 1 and attr[0] == 1:
                 continue
 
-            attr[key - 1] = random.randint(0, 1)
-
-        # attr = attr[self.selected_attr_indices]
+            attr[index] = random.randint(0, 1)
 
         attr.to(self.device)
 
@@ -46,26 +52,24 @@ class Attribute:
 
     def generate_from_attr_names(self, names):
 
-        attr = torch.zeros(40)
+        attr = torch.zeros(self.attr_num)
 
         for name in names:
 
-            assert name in self.target_attr_list.values()
+            assert name in self.selected_attr_list
 
-            for (key, value) in self.target_attr_list.items():
+            for index, attr_name in enumerate(self.selected_attr_list):
 
-                if value == name:
-                    attr[key - 1] = 1
+                if attr_name == name:
+                    attr[index] = 1
 
-        attr = attr[self.selected_attr_indices]
         attr.to(self.device)
 
         return attr
 
     def get_attr_names(self, attr_array):
 
-        assert attr_array.shape[0] == 40
-        # assert attr_array.shape[0] == 13
+        assert attr_array.shape[0] == self.attr_num
 
         attr = attr_array.cpu().numpy()
 
@@ -73,22 +77,23 @@ class Attribute:
 
         assert len(indices) > 0
 
-        names = [self.target_attr_list[index + 1] for index in indices]
-
-        return names
+        return self.selected_attr_list[indices]
 
     def get_attr_difference_names(self, attr_s, attr_t):
+
+        assert attr_s.shape[0] == self.attr_num
+        assert attr_t.shape[0] == self.attr_num
 
         added = []
         removed = []
 
-        for (key, value) in self.target_attr_list:
+        for index, attr_name in enumerate(self.selected_attr_list):
 
-            if attr_s[key - 1] == 0 and attr_t[key - 1] == 1:
-                added.append(value)
+            if attr_s[index] == 0 and attr_t[index] == 1:
+                added.append(attr_name)
 
-            elif attr_s[key - 1] == 1 and attr_t[key - 1] == 0:
-                removed.append(value)
+            elif attr_s[index] == 1 and attr_t[index] == 0:
+                removed.append(attr_name)
 
         return added, removed
 

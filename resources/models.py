@@ -194,7 +194,7 @@ class G_Dec(nn.Module):
 
 class Generator(nn.Module):
 
-    def __init__(self, dim=64, c=5):
+    def __init__(self, dim=64, c=13):
 
         super().__init__()
 

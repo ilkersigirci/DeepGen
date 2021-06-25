@@ -100,10 +100,10 @@ def discr_model_obj(discr, gen, x, attr_src, attr_targ, lamb, lamb1, device="cpu
 # Takes attribute difference as 0 and reconstructs the given x image and returns l1_norm 
 # between reconstructions and original images.
 # To represent attribute difference vector, tensor filled with zeros is created.
-# The attribute difference tensors length is 40 to match the length of every other attribute tensors.
+# The attribute difference tensors length is 13 to match the length of every other attribute tensors.
 def reconst_loss(gen, x, device="cpu"):
     batch_size = x.shape[0]
-    x_recons = gen(x, torch.zeros(batch_size, 40).to(device))
+    x_recons = gen(x, torch.zeros(batch_size, 13).to(device))
     x_recons = x_recons.to(device)
     return l1_norm(x - x_recons)
 
