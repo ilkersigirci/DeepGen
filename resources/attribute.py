@@ -2,12 +2,15 @@ import torch
 import numpy as np
 import random
 
+
 class Attribute:
 
     def __init__(self):
-        self.target_attr_list = {5 : "bald", 6 : "bangs", 9 : "black_hair", 10 : "blond_hair", 12 : "brown_hair", 13 : "bushy_eyebrows", 16 : "eyeglasses",
-                                21 : "male", 22 : "mouth_open", 23 : "mustache", 25 : "no_beard", 27 : "pale_skin", 40 : "young"}
-        
+        self.target_attr_list = {5: "bald", 6: "bangs", 9: "black_hair", 10: "blond_hair", 12: "brown_hair",
+                                 13: "bushy_eyebrows", 16: "eyeglasses",
+                                 21: "male", 22: "mouth_open", 23: "mustache", 25: "no_beard", 27: "pale_skin",
+                                 40: "young"}
+
         # FIXME: one hair color must set to 1?" -> YES
         # NOTE: bald is also included
         self.hair_color_keys = [5, 9, 10, 12]
@@ -22,26 +25,25 @@ class Attribute:
 
         hair_color_key = random.choice(self.hair_color_keys)
 
-        attr[hair_color_key - 1] = 1                        #random.randint(0,1)
+        attr[hair_color_key - 1] = 1  # random.randint(0,1)
 
         for key in self.target_attr_list.keys():
 
             if key in self.hair_color_keys:
                 continue
-            
+
             # Handle bald and bangs collision
             if key == 6 and attr[4] == 1:
                 continue
 
-            attr[key - 1] = random.randint(0,1)
-        
+            attr[key - 1] = random.randint(0, 1)
+
         attr = attr[self.selected_attr_indices]
 
         attr.to(self.device)
 
         return attr
 
-    
     def generate_from_attr_names(self, names):
 
         attr = torch.zeros(40)
@@ -57,7 +59,7 @@ class Attribute:
 
         attr = attr[self.selected_attr_indices]
         attr.to(self.device)
-                
+
         return attr
 
     def get_attr_names(self, attr_array):
@@ -70,26 +72,26 @@ class Attribute:
 
         assert len(indices) > 0
 
-        names = [self.target_attr_list[index+1] for index in indices]
+        names = [self.target_attr_list[index + 1] for index in indices]
 
         return names
 
     def get_attr_difference_names(self, attr_s, attr_t):
 
-        added   = []
+        added = []
         removed = []
 
         for (key, value) in self.target_attr_list:
-            
+
             if attr_s[key - 1] == 0 and attr_t[key - 1] == 1:
                 added.append(value)
-            
+
             elif attr_s[key - 1] == 1 and attr_t[key - 1] == 0:
                 removed.append(value)
 
         return added, removed
 
 ## USAGE
-#attr_class = Attribute()
-#generated = attr_class.generate()
-#print(attr_class.get_attr_names(generated))
+# attr_class = Attribute()
+# generated = attr_class.generate()
+# print(attr_class.get_attr_names(generated))

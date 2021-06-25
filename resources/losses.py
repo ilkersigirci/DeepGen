@@ -3,17 +3,20 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import grad
 
-#L1 norm implementation using linalg.norm
+
+# L1 norm implementation using linalg.norm
 def l1_norm(x):
     return torch.mean(torch.abs(x))
 
-#L2 norm implementation using linalg.norm
+
+# L2 norm implementation using linalg.norm
 def l2_norm(x):
     # return torch.linalg.norm(x, 2, -1)
-    return torch.sqrt(torch.sum(x**2, dim=1))
+    return torch.sqrt(torch.sum(x ** 2, dim=1))
+
 
 # Adversarial Loss of Discriminator
-def adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device = "cpu"):
+def adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device="cpu"):
     # t is used to calculate x_hat which is used to calculate grad_penalty
     # t is randomized between 0 and 1
     t = torch.rand(x.size()[0], 1, 1, 1)
@@ -38,17 +41,18 @@ def adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device = "cpu")
     # create_graph : It is set as true to be able to compute higher order derivative products
     # retain_graph : To be able to loss.backward with higher order derivatives, it is needed to be set as true
     grads = grad(
-        outputs = x_hat_class,
-        inputs = x_hat,
-        grad_outputs = torch.ones(x_hat_class.size()).to(device),
-        create_graph = True,
-        retain_graph = True)[0]
+        outputs=x_hat_class,
+        inputs=x_hat,
+        grad_outputs=torch.ones(x_hat_class.size()).to(device),
+        create_graph=True,
+        retain_graph=True)[0]
 
-    #L2 norm of gradients are taken and gradient formula is followed
+    # L2 norm of gradients are taken and gradient formula is followed
     gradient_penalty = lamb * torch.mean((l2_norm(grads) - 1) ** 2)
 
-    #Adversarial loss is returned by following calculation
+    # Adversarial loss is returned by following calculation
     return torch.mean(gen_class) - torch.mean(real_class) + gradient_penalty
+
 
 # Attribute Manipulation Loss of Discriminator
 # Attribute manipulation is checked between predicted real attributed by discriminator and 
@@ -60,6 +64,7 @@ def discr_attr_manip_loss(real_attr, attr_src):
     real_attr = real_attr.float()
     attr_src = attr_src.float()
     return F.binary_cross_entropy_with_logits(real_attr, attr_src, reduction='sum') / real_attr.size(0)
+
 
 # Model Objective of Discriminator
 # Takes Discriminator, Generator, Real Images, Attribute differences, Target attributes, 
@@ -78,7 +83,7 @@ def discr_model_obj(discr, gen, x, attr_src, attr_targ, lamb, lamb1, device="cpu
 
     # Corresponding class and attributes are classified by discrimiator for generated image
     # Attributes and classes are assumed to be returned as log of actual attributes and classes
-    gen_class , gen_attr = discr(x_gen)
+    gen_class, gen_attr = discr(x_gen)
     gen_attr = gen_attr.to(device)
     gen_class = gen_class.to(device)
     # Corresponding class and attributes are classified by discrimiator for real image x
@@ -87,14 +92,16 @@ def discr_model_obj(discr, gen, x, attr_src, attr_targ, lamb, lamb1, device="cpu
     real_attr = real_attr.to(device)
     real_class = real_class.to(device)
 
-    return -1 * adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device) + lamb1 * discr_attr_manip_loss(real_attr, attr_src)
+    return -1 * adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device) + lamb1 * discr_attr_manip_loss(
+        real_attr, attr_src)
+
 
 # Reconstruction Loss of Generator
 # Takes attribute difference as 0 and reconstructs the given x image and returns l1_norm 
 # between reconstructions and original images.
 # To represent attribute difference vector, tensor filled with zeros is created.
 # The attribute difference tensors length is 40 to match the length of every other attribute tensors.
-def reconst_loss(gen, x, device = "cpu"):
+def reconst_loss(gen, x, device="cpu"):
     batch_size = x.shape[0]
     x_recons = gen(x, torch.zeros(batch_size, 40).to(device))
     x_recons = x_recons.to(device)
@@ -107,6 +114,7 @@ def reconst_loss(gen, x, device = "cpu"):
 def adv_gen_loss(gen_class):
     return torch.mean(gen_class)
 
+
 # Attribute Manipulation Loss of Generator
 # Takes the attributes predicted by Discriminator for generated images and target attributes
 # Returns the attribute manip loss of generator
@@ -114,8 +122,9 @@ def gen_attr_manip_loss(gen_attr, attr_targ):
     # inner_log = torch.sigmoid(1 - torch.exp(gen_attr))
     # inner_log = torch.clamp(inner_log, epsilon, 1. - epsilon)
     # return -1 * torch.mean(attr_targ * gen_attr + (1 - attr_targ) * F.logsigmoid(1 - torch.exp(gen_attr))) 
-    attr_targ_expanded = attr_targ.repeat(gen_attr.size(0),1)
+    attr_targ_expanded = attr_targ.repeat(gen_attr.size(0), 1)
     return F.binary_cross_entropy_with_logits(gen_attr, attr_targ_expanded, reduction='sum') / gen_attr.size(0)
+
 
 # Model Objective of Generator
 # Takes Discriminator, Generator, Real Images, Attribute differences, Target attributes, 
@@ -124,7 +133,7 @@ def gen_attr_manip_loss(gen_attr, attr_targ):
 def gen_model_obj(discr, gen, x, attr_src, attr_targ, lamb2, lamb3, device="cpu"):
     # Difference of attributes are calculated.
     attr_diff = attr_targ - attr_src
-    attr_diff = attr_diff * torch.rand_like(attr_diff) #?
+    attr_diff = attr_diff * torch.rand_like(attr_diff)  # ?
 
     # New images are generated for given x and attr_diff
     x_gen = gen(x, attr_diff)
@@ -132,8 +141,10 @@ def gen_model_obj(discr, gen, x, attr_src, attr_targ, lamb2, lamb3, device="cpu"
 
     # Corresponding class and attributes are classified by discrimiator for generated image
     # Attributes and classes are assumed to be returned as log of actual attributes and classes
-    gen_class , gen_attr = discr(x_gen)
+    gen_class, gen_attr = discr(x_gen)
     gen_attr = gen_attr.to(device)
     gen_class = gen_class.to(device)
 
-    return -1 * adv_gen_loss(gen_class) + lamb2 * gen_attr_manip_loss(gen_attr, attr_targ) + lamb3 * reconst_loss(gen, x, device)
+    return -1 * adv_gen_loss(gen_class) + lamb2 * gen_attr_manip_loss(gen_attr, attr_targ) + lamb3 * reconst_loss(gen,
+                                                                                                                  x,
+                                                                                                                  device)

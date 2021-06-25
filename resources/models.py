@@ -6,22 +6,22 @@ https://github.com/csmliu/STGAN/blob/8a206add4f2e87d4b13abaea9d6f77c964d46be9/pa
 import torch
 import torch.nn as nn
 
-FC_DIM        = 1024
-N_LAYERS      = 5
-SHORTCUT_NUM  = N_LAYERS - 1
+FC_DIM = 1024
+N_LAYERS = 5
+SHORTCUT_NUM = N_LAYERS - 1
 
 # As the paper stated, 3x3 kernel size is used 
 STU_KERNEL_SIZE = 3
 
+
 class STU(nn.Module):
 
     def __init__(self, input_dim, output_dim, c, useNorm=True):
-        
         super().__init__()
 
         self.c = c
 
-        self.conv     = nn.Conv2d(input_dim + output_dim, output_dim, STU_KERNEL_SIZE, 1, 1)
+        self.conv = nn.Conv2d(input_dim + output_dim, output_dim, STU_KERNEL_SIZE, 1, 1)
         self.upsample = nn.ConvTranspose2d(c + (2 * input_dim), output_dim, 4, 2, 1)
 
         self.reset = nn.Sequential(
@@ -49,14 +49,13 @@ class STU(nn.Module):
         )
 
     def forward(self, input, state, att_diff):
-
         # Before upsample the state, we need to get initial shape to
         # scale the attribute difference
         n, _, h, w = state.shape
 
         # the difference attribute vector is stretched to have the same spatial size with the hidded state
         att_diff = att_diff.view((n, self.c, 1, 1))
-        
+
         # If dimension=1, the expand function repeats the values in those dimensions
         # with specified number.
         # In this case:
@@ -67,27 +66,27 @@ class STU(nn.Module):
         # Since feature maps across layers have different spatial size,
         # we upsample the hidden state s^(l+1) by using transposed convolution. 
         state = self.upsample(torch.cat([state, att_diff], dim=1))
-        
+
         r = self.reset(torch.cat([input, state], dim=1))
         z = self.update(torch.cat([input, state], dim=1))
-        
+
         output_state = r * state
         intermediate_output = self.intermediate(torch.cat([input, output_state], dim=1))
         output = ((1 - z) * state) + (z * intermediate_output)
-        
+
         return output, output_state
 
 
 class G_Enc(nn.Module):
 
     def __init__(self, dim=64, c=5):
-        
+
         super().__init__()
 
         self.dim = dim
         self.c = c
-        
-        input_channels  = 3
+
+        input_channels = 3
         output_channels = 2 * dim
 
         """
@@ -96,9 +95,8 @@ class G_Enc(nn.Module):
         in order to transfer them to the decoder.
         """
         self.enc = nn.ModuleList()
-        
-        for i in range(N_LAYERS):
 
+        for i in range(N_LAYERS):
             output_channels = dim * (2 ** i)
 
             self.enc.append(
@@ -108,13 +106,13 @@ class G_Enc(nn.Module):
                     nn.LeakyReLU(negative_slope=0.2, inplace=True)
                 )
             )
-            
+
             input_channels = output_channels
-    
+
     def forward(self, x):
 
         outputs = []
-        out     = x
+        out = x
 
         for i in self.enc:
             out = i(out)
@@ -122,14 +120,15 @@ class G_Enc(nn.Module):
 
         return outputs
 
+
 class G_Dec(nn.Module):
 
     def __init__(self, dim=64, c=5, stu_outputs=None):
-        
+
         super().__init__()
 
         self.dim = dim
-        self.c   = c
+        self.c = c
         self.stu_outputs = stu_outputs
 
         """
@@ -144,7 +143,7 @@ class G_Dec(nn.Module):
             # first layer
             if i == 0:
 
-                input_channels  = dim * (2 ** (N_LAYERS - 1)) + c
+                input_channels = dim * (2 ** (N_LAYERS - 1)) + c
                 output_channels = dim * (2 ** (N_LAYERS - 1))
 
                 self.dec.append(
@@ -156,7 +155,6 @@ class G_Dec(nn.Module):
 
             # last layer
             elif i == N_LAYERS - 1:
-                
 
                 # In the paper_supplementary, output dim stated as 3.
                 self.dec.append(
@@ -164,34 +162,31 @@ class G_Dec(nn.Module):
                         nn.ConvTranspose2d(3 * dim, 3, 4, 2, 1),
                         nn.Tanh()
                     ))
-            
+
             # For intermediate layers
             # Since all of them have shortcut layers, aka they are using STU
             # the channel calculation is done respectively.
             # Meaning that, for input channel, 3 * dim is used instead of 2 * dim 
             else:
-                
-                input_channels  = (3 * dim) * (2 ** (N_LAYERS - 1 - i))
+
+                input_channels = (3 * dim) * (2 ** (N_LAYERS - 1 - i))
                 output_channels = dim * (2 ** (N_LAYERS - 1 - i))
-                
+
                 self.dec.append(
                     nn.Sequential(
-                    nn.ConvTranspose2d(input_channels, output_channels, 4, 2, 1),
-                    nn.BatchNorm2d(output_channels),
-                    nn.ReLU(inplace=True)
-                ))
-
-
+                        nn.ConvTranspose2d(input_channels, output_channels, 4, 2, 1),
+                        nn.BatchNorm2d(output_channels),
+                        nn.ReLU(inplace=True)
+                    ))
 
     def forward(self, latent, attribute, stu_outputs):
 
         out = torch.cat([latent, attribute], dim=1)
-        
+
         out = self.dec[0](out)
 
         for i in range(1, N_LAYERS):
-            
-            out = torch.cat([out, stu_outputs[i-1]], dim=1)
+            out = torch.cat([out, stu_outputs[i - 1]], dim=1)
             out = self.dec[i](out)
 
         return out
@@ -200,7 +195,7 @@ class G_Dec(nn.Module):
 class Generator(nn.Module):
 
     def __init__(self, dim=64, c=5):
-        
+
         super().__init__()
 
         self.dim = dim
@@ -211,7 +206,7 @@ class Generator(nn.Module):
 
         self.STUs = nn.ModuleList()
 
-        for i in range(3, -1, -1):        # 3,2,1,0
+        for i in range(3, -1, -1):  # 3,2,1,0
             channel_num = dim * (2 ** i)
             self.STUs.append(STU(channel_num, channel_num, c, useNorm=False))
 
@@ -222,23 +217,22 @@ class Generator(nn.Module):
         return self.decoder.forward(latent, attribute, stu_outputs)
 
     def forward(self, image, attribute):
-        
+
         encoder_outputs = self.encode(image)
 
         latent = encoder_outputs[-1]
-        state  = encoder_outputs[-1]
+        state = encoder_outputs[-1]
 
         n, _, h, w = latent.shape
-        
+
         """
         This also can be done in the forward pass of the STU
         But this way we can loose the intuitivenes of STU
         """
         stu_outputs = []
 
-        for i in range (1, N_LAYERS):
-
-            stu_output, state = self.STUs[i-1].forward(encoder_outputs[-(i+1)], state, attribute)
+        for i in range(1, N_LAYERS):
+            stu_output, state = self.STUs[i - 1].forward(encoder_outputs[-(i + 1)], state, attribute)
             stu_outputs.append(stu_output)
 
         # If dimension=1, the expand function repeats the values in those dimensions
@@ -255,8 +249,6 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
 
     def __init__(self, x=384, dim=64, fc_dim=FC_DIM, c=5):
-
-
         """
         x = size of the image
         c = amount of attributes
@@ -265,17 +257,16 @@ class Discriminator(nn.Module):
 
         super().__init__()
 
-        self.dim      = dim
-        self.fc_dim   = fc_dim
-        self.c        = c
-        
-        input_channels  = 3
+        self.dim = dim
+        self.fc_dim = fc_dim
+        self.c = c
+
+        input_channels = 3
         output_channels = 2 * dim
 
         stacked_conv_layers = []
-        
-        for i in range(N_LAYERS):
 
+        for i in range(N_LAYERS):
             output_channels = dim * (2 ** i)
 
             stacked_conv_layers.append(
@@ -285,15 +276,15 @@ class Discriminator(nn.Module):
                     nn.LeakyReLU(negative_slope=0.2, inplace=True)
                 )
             )
-            
+
             input_channels = output_channels
-        
+
         self.stacked_conv = nn.Sequential(*stacked_conv_layers)
-        
-        feature_size = x // (2**N_LAYERS)
+
+        feature_size = x // (2 ** N_LAYERS)
 
         fc_input_dim = dim * (2 ** (N_LAYERS - 1)) * (feature_size ** 2)
-        
+
         self.D_adv = nn.Sequential(
             nn.Linear(fc_input_dim, fc_dim),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
@@ -307,12 +298,11 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, x):
-
         intermediate = self.stacked_conv(x)
-        
+
         intermediate = intermediate.view(intermediate.shape[0], -1)
-        
+
         adv = self.D_adv(intermediate)
         att = self.D_att(intermediate)
-        
+
         return adv, att
