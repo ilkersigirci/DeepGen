@@ -5,10 +5,11 @@ import random
 
 class Attribute:
 
-    def __init__(self):
+    def __init__(self, device):
 
         self.selected_attr_indices = [4, 5, 8, 9, 11, 12, 15, 20, 21, 22, 24, 26, 39]
         self.attr_num = len(self.selected_attr_indices)
+        self.device = device
 
         # FIXME: one hair color must set to 1?" -> YES
         # NOTE: bald is also included
@@ -17,8 +18,6 @@ class Attribute:
         self.selected_attr_list = ["bald", "bangs", "black_hair", "blond_hair", "brown_hair",
                                     "bushy_eyebrows", "eyeglasses", "male", "mouth_open",
                                     "mustache", "no_beard", "pale_skin","young"]
-
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def transform_original_attributes(self, attr):
 
@@ -97,7 +96,32 @@ class Attribute:
 
         return added, removed
 
-## USAGE
-# attr_class = Attribute()
-# generated = attr_class.generate()
-# print(attr_class.get_attr_names(generated))
+    def create_original_attr_list(self, original_attr_batch):
+
+        assert original_attr_batch.shape[1] == self.attr_num
+
+        # Add original attr in the beginning to get reconstruction
+        result = [original_attr_batch]
+
+        for index, attr_name in enumerate(self.selected_attr_list):
+
+            target_attr = original_attr_batch.clone()
+
+            # Just set one hair color to 1.
+            if index in self.hair_color_indices:
+
+                target_attr[:, index] = 1
+
+                for hair_index in self.hair_color_indices:
+                    
+                    if hair_index != index:
+                        target_attr[:, hair_index] = 0
+            
+            # Take complement of the attribute value for calculating attribute difference
+            # For example: Make 0 to 1, and 1 to 0
+            else:
+                target_attr[:, index] = (target_attr[:, index] == 0) # ?
+
+            result.append(target_attr.to(self.device))
+
+        return result

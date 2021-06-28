@@ -1,76 +1,55 @@
-# Utils Section
 from matplotlib import pyplot as plt
 import random
 import os
 import numpy as np
-import pandas as pd
 from torchvision.utils import make_grid, save_image
 import torch
-import torchvision
 
 
-def show_image(image, title="Single Image"):
-    image = image.data.cpu().view(28, 28)
+def set_seeds(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
-    figure = plt.figure()
-    plt.title(title)
-    plt.imshow(image, cmap='gray')
-    plt.axis('off')
+def generate_image_samples(org_images, gen, org_attrs_list, device='cpu'):
 
+    gen.eval()
 
-def show_images(images, col=4, title="Multiple Images"):
-    plt.figure(figsize=(20, 5))
-    images = images.data.cpu().view(-1, 28, 28)
+    org_images = org_images.to(device)
 
-    for i in range(col):
-        plt.subplot(1, col, i + 1)
-        plt.title(title)
-        plt.imshow(images[i], cmap='gray')
-        plt.axis('off')
+    org_attr = org_attrs_list[0]
 
+    generated_image_list = [org_images]
 
-def disp_ori_recons(x, x_recons, col=2, epoch=0, is_random=True):
-    batch_size = x_recons.shape[0]
+    for attr in org_attrs_list:
 
-    if is_random:
-        batch_indices = [random.randint(0, batch_size - 1) for _ in range(col)]
-    else:
-        batch_indices = [i for i in range(col)]
+        attr_diff = attr.to(device) - org_attr.to(device)
+        attr_diff = attr_diff.to(device)
 
-    if x is not None:
+        generated_image = gen(org_images, attr_diff)
+        generated_image_list.append(generated_image)
+    
+    # Stack generated images side to side
+    generated_image_list = torch.cat(generated_image_list, dim=3)
 
-        x = x.data.cpu().view(-1, 28, 28)
+    gen.train()
 
-        plt.figure(figsize=(10, 5))
-        plt.suptitle(f'Epoch: {epoch} – Original vs Reconstructed')
+    return generated_image_list
 
-        for i in range(col):
-            plt.subplot(1, col, i + 1)
-            plt.imshow(x[batch_indices[i]], cmap='gray')  # i+4*N
-            plt.axis('off')
-
-    x_recons = x_recons.data.cpu().view(-1, 28, 28)
-
-    plt.figure(figsize=(10, 5))
-
-    for i in range(col):
-        plt.subplot(1, col, i + 1)
-        plt.imshow(x_recons[batch_indices[i]], cmap='gray')
-        plt.axis('off')
-
-
-######################################################################################################
-
-def show_images_new(image, device='cpu', title="Images"):
+def show_images(image, device='cpu', title="Images"):
     plt.figure(figsize=(10, 10))
     plt.axis("off")
     plt.title(title)
     plt.imshow(np.transpose(make_grid(image.to(device)[:20], padding=2, normalize=True).cpu(), (1, 2, 0)))
 
 
-def save_images_new(image, image_name, device='cpu'):
-    save_image(image, image_name, normalize=True)
+def save_images(image, image_name, sample_size=5):
 
+    image = image.data.cpu()
+    # image = (image + 1) / 2
+    # image = image.clamp_(0, 1)
+
+    save_image(image[:sample_size, :], image_name, normalize=True, nrow=1, padding=0)
 
 def save_state(model, optimizer, epoch, model_name, path="./"):
     state = {
@@ -100,9 +79,3 @@ def load_state(model, optimizer, path, mode='train', device='cpu'):
         model.train()
 
     epoch = state['epoch']
-
-
-def set_seeds(seed):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
