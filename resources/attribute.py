@@ -19,7 +19,7 @@ class Attribute:
                                     "bushy_eyebrows", "eyeglasses", "male", "mouth_open",
                                     "mustache", "no_beard", "pale_skin","young"]
 
-    def transform_original_attributes(self, attr):
+    def select_important_attributes(self, attr):
 
         attr = attr[:, self.selected_attr_indices]
         attr.to(self.device)
@@ -96,16 +96,16 @@ class Attribute:
 
         return added, removed
 
-    def create_original_attr_list(self, original_attr_batch):
+    def create_attr_list(self, attr_batch):
 
-        assert original_attr_batch.shape[1] == self.attr_num
+        assert attr_batch.shape[1] == self.attr_num
 
         # Add original attr in the beginning to get reconstruction
-        result = [original_attr_batch]
+        result = [attr_batch]
 
         for index, attr_name in enumerate(self.selected_attr_list):
 
-            target_attr = original_attr_batch.clone()
+            target_attr = attr_batch.clone()
 
             # Just set one hair color to 1.
             if index in self.hair_color_indices:

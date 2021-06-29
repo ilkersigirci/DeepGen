@@ -47,6 +47,8 @@ def adv_discr_loss(discr, x, x_gen, gen_class, real_class, lamb, device="cpu"):
         create_graph=True,
         retain_graph=True)[0]
 
+    grads = grads.view(grads.shape[0], -1)
+
     # L2 norm of gradients are taken and gradient formula is followed
     gradient_penalty = lamb * torch.mean((l2_norm(grads) - 1) ** 2)
 

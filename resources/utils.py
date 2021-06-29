@@ -11,47 +11,45 @@ def set_seeds(seed):
     np.random.seed(seed)
     random.seed(seed)
 
-def generate_image_samples(org_images, gen, org_attrs_list, device='cpu'):
+def generate_image_samples(images, gen, attrs_list, device='cpu'):
 
-    gen.eval()
+    images = images.to(device)
 
-    org_images = org_images.to(device)
+    org_attr = attrs_list[0]
 
-    org_attr = org_attrs_list[0]
+    generated_image_list = [images]
 
-    generated_image_list = [org_images]
-
-    for attr in org_attrs_list:
+    for attr in attrs_list:
 
         attr_diff = attr.to(device) - org_attr.to(device)
         attr_diff = attr_diff.to(device)
 
-        generated_image = gen(org_images, attr_diff)
+        generated_image = gen(images, attr_diff)
         generated_image_list.append(generated_image)
     
     # Stack generated images side to side
     generated_image_list = torch.cat(generated_image_list, dim=3)
 
-    gen.train()
-
     return generated_image_list
 
-def show_images(image, device='cpu', title="Images"):
+def show_images(image, device='cpu', sample_size=7, title="Images"):
+    
     plt.figure(figsize=(10, 10))
     plt.axis("off")
     plt.title(title)
-    plt.imshow(np.transpose(make_grid(image.to(device)[:20], padding=2, normalize=True).cpu(), (1, 2, 0)))
+    plt.imshow(np.transpose(make_grid(image.to(device)[:sample_size], padding=2, normalize=True).cpu(), (1, 2, 0)))
 
 
-def save_images(image, image_name, sample_size=5):
+def save_images(image, image_name, sample_size=7):
 
     image = image.data.cpu()
     # image = (image + 1) / 2
-    # image = image.clamp_(0, 1)
+    # image.clamp_(0, 1)
 
     save_image(image[:sample_size, :], image_name, normalize=True, nrow=1, padding=0)
 
 def save_state(model, optimizer, epoch, model_name, path="./"):
+    
     state = {
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
@@ -67,6 +65,7 @@ def save_state(model, optimizer, epoch, model_name, path="./"):
 
 
 def load_state(model, optimizer, path, mode='train', device='cpu'):
+    
     state = torch.load(path)
 
     model.load_state_dict(state['model_state_dict'])
