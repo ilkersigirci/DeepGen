@@ -1,10 +1,8 @@
 .vscode/
-lookup
 
 .ipynb_checkpoints/
 
 data/
-data.tar.xz
 
 
 # python related

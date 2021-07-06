@@ -56,7 +56,6 @@ def save_state(model, optimizer, epoch, model_name, path="./"):
         'optimizer_state_dict': optimizer.state_dict(),
     }
 
-    # file_name = f'{model_name}_{epoch}.pth'
     file_name = f'{model_name}.pth'
 
     save_path = os.path.join(path, file_name)
