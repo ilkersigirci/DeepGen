@@ -11,13 +11,12 @@ class Attribute:
         self.attr_num = len(self.selected_attr_indices)
         self.device = device
 
-        # FIXME: one hair color must set to 1?" -> YES
         # NOTE: bald is also included
         self.hair_color_indices = [0, 2, 3, 4]
 
-        self.selected_attr_list = ["bald", "bangs", "black_hair", "blond_hair", "brown_hair",
-                                    "bushy_eyebrows", "eyeglasses", "male", "mouth_open",
-                                    "mustache", "no_beard", "pale_skin","young"]
+        self.selected_attr_list = ["Bald", "Bangs", "Black_Hair", "Blond_Hair", "Brown_Hair",
+                                    "Bushy_Eyebrows", "Eyeglasses", "Male", "Mouth_Slightly_Open",
+                                    "Mustache", "No_Beard", "Pale_Skin", "Young"]
 
     def select_important_attributes(self, attr):
 
@@ -34,7 +33,7 @@ class Attribute:
 
         attr[hair_color_index] = 1  # random.randint(0,1)
 
-        for index in self.selected_attr_list:
+        for index in range(len(self.selected_attr_list)):
 
             if index in self.hair_color_indices:
                 continue
@@ -103,7 +102,7 @@ class Attribute:
         # Add original attr in the beginning to get reconstruction
         result = [attr_batch]
 
-        for index, attr_name in enumerate(self.selected_attr_list):
+        for index in range(len(self.selected_attr_list)):
 
             target_attr = attr_batch.clone()
 
@@ -120,7 +119,8 @@ class Attribute:
             # Take complement of the attribute value for calculating attribute difference
             # For example: Make 0 to 1, and 1 to 0
             else:
-                target_attr[:, index] = (target_attr[:, index] == 0) # ?
+                negated_values = (target_attr[:, index] == 1)
+                target_attr[:, index] = negated_values
 
             result.append(target_attr.to(self.device))
 

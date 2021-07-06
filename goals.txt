@@ -8,3 +8,8 @@ Quantitative:We aim to reproduce Attribute generation accuracy metric of Figure 
 
 Training the model on CelebA dataset took much more than expected.
 Details are explained on the notebook
+
+—— version 2 submission ——
+
+Unfortunately, we couldn't achieve our goals.
+Details are explained on the notebook
